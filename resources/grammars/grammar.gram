@@ -1,0 +1,27 @@
+#JSGF V1.0;
+
+/**
+ * JSGF Grammar 
+ */
+
+grammar grammar;
+
+public <commandComplete> = <command>;
+<credenciales> = (admin);
+<nombres> = (alvaro | elena | carlos | juan | pedro | ana | maria | marco | jose | bladimir);
+<buscarContacto> = (abrir | buscar);
+<menuPrincipal> = (regresar | atras | menu | home | inicio);
+<msjCmd> = (escribir | enviar);
+<command>  = (
+    usuario (<credenciales>|<nombres>) | 
+    contraseña <credenciales> |
+    <buscarContacto> <nombres>* |
+    crear contacto+ | 
+    eliminar contacto+ | 
+    guardar [<nombres>] | 
+    llamar [<nombres> | numero] | 
+    salir [programa] | 
+    continuar |
+    <menuPrincipal> |
+    <msjCmd> [mensaje]
+);
