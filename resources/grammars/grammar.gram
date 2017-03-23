@@ -9,19 +9,28 @@ grammar grammar;
 public <commandComplete> = <command>;
 <credenciales> = (admin);
 <nombres> = (alvaro | elena | carlos | juan | pedro | ana | maria | marco | jose | bladimir);
-<buscarContacto> = (abrir | buscar);
+<buscarContacto> = (abrir | buscar | contacto);
 <menuPrincipal> = (regresar | atras | menu | home | inicio);
 <msjCmd> = (escribir | enviar);
+<numeros> = (1|2|3|4|5|6|7|8|9|0);
 <command>  = (
+    comandos |
     usuario (<credenciales>|<nombres>) | 
     contraseña <credenciales> |
-    <buscarContacto> <nombres>* |
+    <buscarContacto> <nombres> |
     crear contacto+ | 
-    eliminar contacto+ | 
-    guardar [<nombres>] | 
-    llamar [<nombres> | numero] | 
+    eliminar contacto | 
+    listar <nombres>* |
+    guardar [contacto | <nombres>]   | 
+    llamar [video] [<nombres> | numero] | 
     salir [programa] | 
     continuar |
     <menuPrincipal> |
-    <msjCmd> [mensaje]
+    <msjCmd> [mensaje] |
+    nombre <nombres> |
+    apellido <nombres> |
+    numero <numeros>+ |
+    cambiar imagen |
+    activar video |
+    colgar
 );
