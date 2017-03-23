@@ -21,7 +21,7 @@ public <commandComplete> = <command>;
     crear contacto+ | 
     eliminar contacto | 
     listar <nombres>* |
-    guardar [contacto | <nombres>]   | 
+    guardar [nuevo | contacto | <nombres>]   | 
     llamar [video] [<nombres> | numero] | 
     salir [programa] | 
     continuar |

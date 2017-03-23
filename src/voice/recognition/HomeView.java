@@ -67,7 +67,7 @@ public class HomeView extends javax.swing.JFrame {
         panel_videoCall.setVisible(false);
         this.initSphinx();
         this.initMongo();
-        minishell();
+        this.minishell();
         this.setLocationRelativeTo(null);
         this.setVisible(false);
     }
@@ -162,7 +162,6 @@ public class HomeView extends javax.swing.JFrame {
         if (!result.equalsIgnoreCase("<unk>") && result.length() > 0) {
             System.out.println("Log: " + result);
             String[] tokens = result.split(" ");
-            Document bitaDoc = new Document();
             if (this.panel_login.isVisible()) {
                 switch (tokens[0]) {
                     case "salir": {
@@ -196,6 +195,7 @@ public class HomeView extends javax.swing.JFrame {
                             panel_videoCall.setVisible(false);
                             panel_sms.setVisible(false);
                             guardarBitacora(tokens);
+                            executeCommand("listar");
                         }
                         break;
                     }
@@ -281,7 +281,6 @@ public class HomeView extends javax.swing.JFrame {
                     }
                     case "llamar":{
                         if (tokens.length > 1){
-                            
                             panel_login.setVisible(false);
                             panel_contacts.setVisible(false);
                             panel_contact.setVisible(false);
@@ -292,6 +291,7 @@ public class HomeView extends javax.swing.JFrame {
                             panel_sms.setVisible(false);
                                                        
                             Document doc = new Document();
+                            doc.append("nombre", tokens[1]);
                             selectedDocument = contactos.find(doc).first();
                             if(selectedDocument == null || selectedDocument.isEmpty())
                                 break;
@@ -307,8 +307,9 @@ public class HomeView extends javax.swing.JFrame {
                                 byte[] base64img = Base64.getDecoder().decode(selectedDocument.getString("imagen"));
                                 label_video.setIcon(new ImageIcon(base64img));
                             }
+                            guardarBitacora(tokens);
                         }
-                        guardarBitacora(tokens);
+                        
                         break;
                     }
                     case "activar":{
@@ -336,13 +337,13 @@ public class HomeView extends javax.swing.JFrame {
                             panel_videoCall.setVisible(false);
                             panel_comandos.setVisible(false);
                             panel_sms.setVisible(true);
+                            textArea_listaMensajes.setText("");
                             guardarBitacora(tokens);
                             break;
                         }
-                        textArea_listaMensajes.setText("");
-                        
                         String msg = text_msgToSend.getText();
-                        textArea_listaMensajes.append("Yo: " + msg);
+                        textArea_listaMensajes.append("Yo: " + msg+"\n");
+                        text_msgToSend.setText("");
                         guardarBitacora(tokens,"mensaje",msg);
                         break;
                     }
@@ -367,7 +368,7 @@ public class HomeView extends javax.swing.JFrame {
                             panel_numbers.setVisible(false);
                             panel_videoCall.setVisible(false);
                             panel_comandos.setVisible(false);
-                            panel_sms.setVisible(true);
+                            panel_sms.setVisible(false);
                             numberData="";
                             guardarBitacora(tokens);
                         }
@@ -412,6 +413,40 @@ public class HomeView extends javax.swing.JFrame {
                             if(!tokens[1].equals("contacto") || tokens[1].equals(text_contactNombre.getText())){
                                 JOptionPane.showMessageDialog(null, "No dijo el mismo nombre");
                                 break;
+                            }else if (tokens[1].equals("nuevo")){
+                                //ICON TO BASE64
+                                Icon icon = label_contactImage.getIcon();
+                                BufferedImage image = new BufferedImage(icon.getIconWidth(),
+                                icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
+                                ByteArrayOutputStream b =new ByteArrayOutputStream();
+                                try {
+                                    ImageIO.write(image, "jpg", b );
+                                } catch (IOException ex) {
+                                    Logger.getLogger(HomeView.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                                String base64img = Base64.getEncoder().encodeToString(b.toByteArray());
+                                //END ICON TO BASE64
+                                Document newDoc = new Document();
+                                newDoc
+                                    .append("nombre",text_contactNombre.getText())
+                                    .append("apellido", text_contactApellido.getText())
+                                    .append("numero",text_contactNumero.getValue())
+                                    .append("imagen",base64img);
+                                text_contactNombre.setText("");
+                                text_contactApellido.setText("");
+                                label_contactImage.setIcon(defaultIcon);
+                                if(!selectedDocument.isEmpty() && tokens.length == 2 && tokens[1].equals("contacto")){
+                                    System.out.println(selectedDocument);
+                                    contactos.findOneAndDelete(selectedDocument);
+                                    contactos.insertOne(newDoc);
+                                    selectedDocument = newDoc;
+                                }else{
+                                    contactos.insertOne(newDoc);
+                                }
+                                selectedDocument.clear();
+                                guardarBitacora(tokens);
+                                executeCommand("menu");
+                                break;
                             }
                         }else{
                             if(text_contactApellido.getText().isEmpty() || text_contactNombre.getText().isEmpty() || text_contactNumero.getValue().equals("")){
@@ -419,42 +454,10 @@ public class HomeView extends javax.swing.JFrame {
                                 break;
                             }
                         }
-                        //ICON TO BASE64
-                        Icon icon = label_contactImage.getIcon();
-                        BufferedImage image = new BufferedImage(icon.getIconWidth(),
-                        icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
-                        ByteArrayOutputStream b =new ByteArrayOutputStream();
-                        try {
-                            ImageIO.write(image, "jpg", b );
-                        } catch (IOException ex) {
-                            Logger.getLogger(HomeView.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                        String base64img = Base64.getEncoder().encodeToString(b.toByteArray());
-                        //END ICON TO BASE64
-                        Document newDoc = new Document();
-                        newDoc
-                                .append("nombre",text_contactNombre.getText())
-                                .append("apellido", text_contactApellido.getText())
-                                .append("numero",text_contactNumero.getValue())
-                                .append("imagen",base64img);
-                        text_contactNombre.setText("");
-                        text_contactApellido.setText("");
-                        label_contactImage.setIcon(defaultIcon);
-                        if(!selectedDocument.isEmpty() && tokens.length == 2 && tokens[1].equals("contacto")){
-                            System.out.println(selectedDocument);
-                            contactos.findOneAndDelete(selectedDocument);
-                            contactos.insertOne(newDoc);
-                            selectedDocument = newDoc;
-                        }else{
-                            contactos.insertOne(newDoc);
-                        }
-                        selectedDocument.clear();
-                        guardarBitacora(tokens);
-                        executeCommand("menu");
-                        break;
+                        
                     }
                     case "eliminar":{
-                        if(!selectedDocument.isEmpty() && tokens.length == 2 && tokens[1].equals("contacto")){
+                        if(!selectedDocument.isEmpty() && tokens.length == 2 && tokens[1].equals("contacto") && panel_contact.isVisible()){
                             System.out.println("ELIMINANDO");
                             System.out.println(selectedDocument);
                             contactos.findOneAndDelete(selectedDocument);
@@ -472,9 +475,6 @@ public class HomeView extends javax.swing.JFrame {
     private void activarVideo(){
         ((WebcamPanel)webCamPanel).setFPSDisplayed(true);
         ((WebcamPanel)webCamPanel).start();
-    }
-    private void call(String nombre) {
-        System.out.println("Llamando a: " +  nombre);
     }
     private void guardarBitacora(String[] token) {
         Document bitaDoc = new Document();
@@ -563,7 +563,7 @@ public class HomeView extends javax.swing.JFrame {
         }
         webCamPanel = new javax.swing.JPanel();
         if(webcam != null){
-            webCamPanel = new WebcamPanel(webcam);
+            webCamPanel = new WebcamPanel(webcam,false);
         }
         label_video = new javax.swing.JLabel();
         panel_contact = new javax.swing.JPanel();
@@ -601,11 +601,6 @@ public class HomeView extends javax.swing.JFrame {
         text_password.setText("password");
         text_password.setToolTipText("");
         text_password.setSelectionColor(java.awt.Color.white);
-        text_password.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                text_passwordActionPerformed(evt);
-            }
-        });
 
         loginButton_salir.setText("Salir");
 
@@ -1290,10 +1285,6 @@ public class HomeView extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void text_passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_text_passwordActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_text_passwordActionPerformed
     void minishell(){
         new Thread(() -> {
             System.out.println("You can start to type...");

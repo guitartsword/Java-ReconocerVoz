@@ -102,9 +102,6 @@
               <Color blue="ff" green="ff" id="white" palette="1" red="ff" type="palette"/>
             </Property>
           </Properties>
-          <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="text_passwordActionPerformed"/>
-          </Events>
         </Component>
         <Component class="javax.swing.JButton" name="loginButton_salir">
           <Properties>
@@ -931,7 +928,7 @@
         </Component>
         <Container class="javax.swing.JPanel" name="webCamPanel">
           <AuxValues>
-            <AuxValue name="JavaCodeGenerator_CreateCodePost" type="java.lang.String" value="if(webcam != null){&#xa;    webCamPanel = new WebcamPanel(webcam);&#xa;}"/>
+            <AuxValue name="JavaCodeGenerator_CreateCodePost" type="java.lang.String" value="if(webcam != null){&#xa;    webCamPanel = new WebcamPanel(webcam,false);&#xa;}"/>
             <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="Webcam webcam = Webcam.getDefault();&#xa;if(webcam == null){&#xa;    System.err.print(&quot;no web cam found&quot;);&#xa;}"/>
           </AuxValues>
 
