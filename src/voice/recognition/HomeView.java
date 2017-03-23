@@ -29,6 +29,9 @@ import com.github.sarxos.webcam.WebcamPanel;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Scanner;
@@ -54,6 +57,7 @@ public class HomeView extends javax.swing.JFrame {
     private String numberData;
     private int errCount = 0;
     private Document selectedDocument = new Document();
+    private byte[] contactImage;
     /**
      * Creates new form VoiceRecon
      */
@@ -276,7 +280,7 @@ public class HomeView extends javax.swing.JFrame {
                         panel_comandos.setVisible(false);
                         panel_sms.setVisible(false);
                         guardarBitacora(tokens);
-                        executeCommand("listar");
+                        //executeCommand("listar");
                         break;
                     }
                     case "llamar":{
@@ -302,7 +306,7 @@ public class HomeView extends javax.swing.JFrame {
                                 text_contactApellido.setText(selectedDocument.getString("apellido"));
                             }
                             if(selectedDocument.getInteger("numero") != null)
-                                label_contactNumero.setText(selectedDocument.getString("numero"));
+                                label_contactNumero.setText(selectedDocument.getInteger("numero")+"");
                             if(selectedDocument.getString("imagen") != null){
                                 byte[] base64img = Base64.getDecoder().decode(selectedDocument.getString("imagen"));
                                 label_video.setIcon(new ImageIcon(base64img));
@@ -403,58 +407,58 @@ public class HomeView extends javax.swing.JFrame {
                         if(tokens.length == 2 && tokens[1].equals("imagen")){
                             JFileChooser jfc = new JFileChooser();
                             jfc.showOpenDialog(this);
-                            ImageIcon icon = new ImageIcon(jfc.getSelectedFile().getAbsolutePath());
-                            label_contactImage.setIcon(icon);
+                            String pathstr = jfc.getSelectedFile().getAbsolutePath();
+                            byte[] contactImageData = null;
+                            try {
+                                contactImageData = Files.readAllBytes(Paths.get(pathstr));
+                            } catch (IOException ex) {
+                                Logger.getLogger(HomeView.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                            if(contactImageData == null){
+                                label_contactImage.setIcon(defaultIcon);
+                            }else{
+                                contactImage=contactImageData;
+                                label_contactImage.setIcon(new ImageIcon(contactImageData));
+                            }
                             guardarBitacora(tokens);
+                            break;
                         }
+                        break;
                     }
                     case "guardar":{
                         if(tokens.length > 1){
-                            if(!tokens[1].equals("contacto") || tokens[1].equals(text_contactNombre.getText())){
-                                JOptionPane.showMessageDialog(null, "No dijo el mismo nombre");
-                                break;
-                            }else if (tokens[1].equals("nuevo")){
-                                //ICON TO BASE64
-                                Icon icon = label_contactImage.getIcon();
-                                BufferedImage image = new BufferedImage(icon.getIconWidth(),
-                                icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
-                                ByteArrayOutputStream b =new ByteArrayOutputStream();
-                                try {
-                                    ImageIO.write(image, "jpg", b );
-                                } catch (IOException ex) {
-                                    Logger.getLogger(HomeView.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                                String base64img = Base64.getEncoder().encodeToString(b.toByteArray());
-                                //END ICON TO BASE64
-                                Document newDoc = new Document();
-                                newDoc
-                                    .append("nombre",text_contactNombre.getText())
-                                    .append("apellido", text_contactApellido.getText())
-                                    .append("numero",text_contactNumero.getValue())
-                                    .append("imagen",base64img);
-                                text_contactNombre.setText("");
-                                text_contactApellido.setText("");
-                                label_contactImage.setIcon(defaultIcon);
-                                if(!selectedDocument.isEmpty() && tokens.length == 2 && tokens[1].equals("contacto")){
-                                    System.out.println(selectedDocument);
-                                    contactos.findOneAndDelete(selectedDocument);
-                                    contactos.insertOne(newDoc);
-                                    selectedDocument = newDoc;
-                                }else{
-                                    contactos.insertOne(newDoc);
-                                }
-                                selectedDocument.clear();
-                                guardarBitacora(tokens);
-                                executeCommand("menu");
-                                break;
+                            //ICON TO BASE64
+                            String base64img = Base64.getEncoder().encodeToString(contactImage);
+                            //END ICON TO BASE64
+                            Document newDoc = new Document();
+                            newDoc
+                                .append("nombre",text_contactNombre.getText())
+                                .append("apellido", text_contactApellido.getText())
+                                .append("numero",text_contactNumero.getValue())
+                                .append("imagen",base64img);
+                            text_contactNombre.setText("");
+                            text_contactApellido.setText("");
+                            label_contactImage.setIcon(defaultIcon);
+                            if((selectedDocument==null || !selectedDocument.isEmpty()) && tokens.length == 2 && tokens[1].equals("contacto")){
+                                System.out.println(selectedDocument);
+                                contactos.findOneAndDelete(selectedDocument);
+                                contactos.insertOne(newDoc);
+                                selectedDocument = newDoc;
+                            }else if((selectedDocument==null || !selectedDocument.isEmpty()) && tokens.length == 2 && tokens[1].equals("nuevo")){
+                                contactos.insertOne(newDoc);
+                                System.out.println("Se agrego a la base de datos :)");
                             }
+                            selectedDocument.clear();
+                            guardarBitacora(tokens);
+                            executeCommand("menu");
+                            break;
                         }else{
                             if(text_contactApellido.getText().isEmpty() || text_contactNombre.getText().isEmpty() || text_contactNumero.getValue().equals("")){
                                 JOptionPane.showMessageDialog(null, "Pofavor ingrese todos los valores");
                                 break;
                             }
                         }
-                        
+                        break;
                     }
                     case "eliminar":{
                         if(!selectedDocument.isEmpty() && tokens.length == 2 && tokens[1].equals("contacto") && panel_contact.isVisible()){
