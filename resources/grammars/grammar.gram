@@ -26,11 +26,11 @@ public <commandComplete> = <command>;
     salir [programa] | 
     continuar |
     <menuPrincipal> |
-    <msjCmd> [mensaje] |
+    <msjCmd> [mensaje | correo] |
     nombre <nombres> |
     apellido <nombres> |
     numero <numeros>+ |
     cambiar imagen |
     activar video |
-    colgar
+    colgar | correo
 );

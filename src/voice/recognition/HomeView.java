@@ -25,6 +25,7 @@ import org.bson.Document;
 //Webcam
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
+import java.awt.Toolkit;
 
 
 import java.awt.image.BufferedImage;
@@ -58,6 +59,7 @@ public class HomeView extends javax.swing.JFrame {
     private int errCount = 0;
     private Document selectedDocument = new Document();
     private byte[] contactImage;
+    private String datosCorreo;
     /**
      * Creates new form VoiceRecon
      */
@@ -65,7 +67,7 @@ public class HomeView extends javax.swing.JFrame {
         this.logger = Logger.getLogger(this.getClass().getName());
         this.initComponents();
         panel_contacts.setVisible(false);
-        panel_modifyContact.setVisible(false);
+        panel_enviarCorreo.setVisible(false);
         panel_msg.setVisible(false);
         panel_numbers.setVisible(false);
         panel_videoCall.setVisible(false);
@@ -193,7 +195,7 @@ public class HomeView extends javax.swing.JFrame {
                         }else{
                             panel_login.setVisible(false);
                             panel_contacts.setVisible(true);
-                            panel_modifyContact.setVisible(false);
+                            panel_enviarCorreo.setVisible(false);
                             panel_msg.setVisible(false);
                             panel_numbers.setVisible(false);
                             panel_videoCall.setVisible(false);
@@ -205,6 +207,7 @@ public class HomeView extends javax.swing.JFrame {
                     }
                 }
             } else {
+                OUTER:
                 switch (tokens[0]) {
                     case "salir": {
                         guardarBitacora(tokens);
@@ -256,7 +259,7 @@ public class HomeView extends javax.swing.JFrame {
                         if(selectedDocument.getString("nombre") != null)
                             text_contactNombre.setText(selectedDocument.getString("nombre"));
                         if(selectedDocument.getString("apellido") != null)
-                         text_contactApellido.setText(selectedDocument.getString("apellido"));
+                            text_contactApellido.setText(selectedDocument.getString("apellido"));
                         if(selectedDocument.getInteger("numero") != null)
                             text_contactNumero.setValue(selectedDocument.getInteger("numero"));
                         if(selectedDocument.getString("imagen") != null){
@@ -266,9 +269,9 @@ public class HomeView extends javax.swing.JFrame {
                         guardarBitacora(tokens);
                         break;
                     }
-                    case "menu": 
-                    case "regresar": 
-                    case "atras": 
+                    case "menu":
+                    case "regresar":
+                    case "atras":
                     case "home": 
                     case "inicio":{
                         panel_login.setVisible(false);
@@ -330,19 +333,28 @@ public class HomeView extends javax.swing.JFrame {
                         executeCommand("home");
                         break;
                     }
-                    case "escribir":
-                    case "enviar":{
-                        if(tokens.length>1){
-                            panel_login.setVisible(false);
-                            panel_contacts.setVisible(false);
-                            panel_modifyContact.setVisible(false);
-                            panel_msg.setVisible(false);
-                            panel_numbers.setVisible(false);
-                            panel_videoCall.setVisible(false);
-                            panel_comandos.setVisible(false);
-                            panel_sms.setVisible(true);
-                            textArea_listaMensajes.setText("");
-                            guardarBitacora(tokens);
+                case "escribir":
+                case "enviar":{
+                        if (tokens.length>1) {
+                            switch (tokens[1]) {
+                                case "mensaje":
+                                    panel_login.setVisible(false);
+                                    panel_contacts.setVisible(false);
+                                    panel_enviarCorreo.setVisible(false);
+                                    panel_msg.setVisible(false);
+                                    panel_numbers.setVisible(false);
+                                    panel_videoCall.setVisible(false);
+                                    panel_comandos.setVisible(false);
+                                    panel_sms.setVisible(true);
+                                    textArea_listaMensajes.setText("");
+                                    guardarBitacora(tokens);
+                                    break OUTER;
+                                case "correo":
+                                    String listaCorreos = label_correoDestino.getText();
+                                    JOptionPane.showMessageDialog(null, "Se envio el correo a:"+listaCorreos);
+                                    guardarBitacora(tokens);
+                                    break OUTER;
+                            }
                             break;
                         }
                         String msg = text_msgToSend.getText();
@@ -354,7 +366,8 @@ public class HomeView extends javax.swing.JFrame {
                     case "comandos":{
                         panel_login.setVisible(false);
                         panel_contacts.setVisible(false);
-                        panel_modifyContact.setVisible(false);
+                        panel_enviarCorreo.setVisible(false);
+                        panel_contact.setVisible(true);
                         panel_msg.setVisible(false);
                         panel_numbers.setVisible(false);
                         panel_videoCall.setVisible(false);
@@ -367,6 +380,7 @@ public class HomeView extends javax.swing.JFrame {
                         if(tokens.length>1 && tokens[1].equals("contacto")){
                             panel_login.setVisible(false);
                             panel_contacts.setVisible(false);
+                            panel_enviarCorreo.setVisible(false);
                             panel_contact.setVisible(true);
                             panel_msg.setVisible(false);
                             panel_numbers.setVisible(false);
@@ -418,7 +432,8 @@ public class HomeView extends javax.swing.JFrame {
                                 label_contactImage.setIcon(defaultIcon);
                             }else{
                                 contactImage=contactImageData;
-                                label_contactImage.setIcon(new ImageIcon(contactImageData));
+                                
+                                label_contactImage.setIcon(new ImageIcon(Toolkit.getDefaultToolkit().createImage(contactImageData).getScaledInstance(150, 150, 0)));
                             }
                             guardarBitacora(tokens);
                             break;
@@ -432,10 +447,10 @@ public class HomeView extends javax.swing.JFrame {
                             //END ICON TO BASE64
                             Document newDoc = new Document();
                             newDoc
-                                .append("nombre",text_contactNombre.getText())
-                                .append("apellido", text_contactApellido.getText())
-                                .append("numero",text_contactNumero.getValue())
-                                .append("imagen",base64img);
+                                    .append("nombre",text_contactNombre.getText())
+                                    .append("apellido", text_contactApellido.getText())
+                                    .append("numero",text_contactNumero.getValue())
+                                    .append("imagen",base64img);
                             text_contactNombre.setText("");
                             text_contactApellido.setText("");
                             label_contactImage.setIcon(defaultIcon);
@@ -472,9 +487,53 @@ public class HomeView extends javax.swing.JFrame {
                         System.out.println("NO SE REALIZO ELIMINAR");
                         break;
                     }
+                    case "correo":{
+                        MongoCursor<Document> correos = usuarios.find().iterator();
+                        String listaCorreos="";
+                        while(correos.hasNext()){
+                            Document doc = correos.next();
+                            if(doc.containsKey("correo")){
+                                listaCorreos+=doc.getString("correo") +",";
+                            }
+                        }
+                        label_correoDestino.setText(listaCorreos);
+                        panel_login.setVisible(false);
+                        panel_contacts.setVisible(false);
+                        panel_enviarCorreo.setVisible(true);
+                        panel_contact.setVisible(false);
+                        panel_msg.setVisible(false);
+                        panel_numbers.setVisible(false);
+                        panel_videoCall.setVisible(false);
+                        panel_comandos.setVisible(true);
+                        panel_sms.setVisible(false);
+                        datosCorreo = enviarCorreo();
+                    }
                 }
             }
         }
+    }
+    private String enviarCorreo() {
+        String bitacoraStr="";
+        MongoCursor<Document> listaBitacora = bitacora.find().iterator();
+        while(listaBitacora.hasNext()){
+            Document bita = listaBitacora.next();
+            String comando, opciones, fecha, mensaje="";
+            comando = bita.getString("comando");
+            opciones = bita.getString("opciones");
+            fecha = bita.getString("fecha");
+            if(bita.containsKey("mensaje")){
+                mensaje = bita.getString("mensaje");
+            }
+
+            bitacoraStr += "Fecha: " + fecha +"\n"
+                    +"comando: " + comando + " " + opciones + "\n";
+            if(!mensaje.isEmpty()){
+                bitacoraStr += "mensaje: " + mensaje;
+            }
+            bitacoraStr += "\n\n";
+        }
+        text_bitacora.setText(bitacoraStr);
+        return bitacoraStr;
     }
     private void activarVideo(){
         ((WebcamPanel)webCamPanel).setFPSDisplayed(true);
@@ -554,7 +613,14 @@ public class HomeView extends javax.swing.JFrame {
         panel_contacts = new javax.swing.JPanel();
         jLabel22 = new javax.swing.JLabel();
         label_contactList = new javax.swing.JLabel();
-        panel_modifyContact = new javax.swing.JPanel();
+        panel_enviarCorreo = new javax.swing.JPanel();
+        jLabel13 = new javax.swing.JLabel();
+        jLabel14 = new javax.swing.JLabel();
+        jLabel24 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        text_bitacora = new javax.swing.JTextArea();
+        jButton8 = new javax.swing.JButton();
+        label_correoDestino = new javax.swing.JLabel();
         panel_videoCall = new javax.swing.JPanel();
         jLabel8 = new javax.swing.JLabel();
         label_nombreCompleto = new javax.swing.JLabel();
@@ -1084,18 +1150,64 @@ public class HomeView extends javax.swing.JFrame {
 
         getContentPane().add(panel_contacts, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 410, 410));
 
-        javax.swing.GroupLayout panel_modifyContactLayout = new javax.swing.GroupLayout(panel_modifyContact);
-        panel_modifyContact.setLayout(panel_modifyContactLayout);
-        panel_modifyContactLayout.setHorizontalGroup(
-            panel_modifyContactLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 410, Short.MAX_VALUE)
+        jLabel13.setFont(new java.awt.Font("Ubuntu", 1, 24)); // NOI18N
+        jLabel13.setText("Enviar Correo");
+
+        jLabel14.setText("Destino: ");
+
+        jLabel24.setText("Bitacora:");
+
+        text_bitacora.setColumns(20);
+        text_bitacora.setRows(5);
+        jScrollPane2.setViewportView(text_bitacora);
+
+        jButton8.setText("Enviar bitacora");
+
+        label_correoDestino.setText("jbjimenez@unitec.edu");
+
+        javax.swing.GroupLayout panel_enviarCorreoLayout = new javax.swing.GroupLayout(panel_enviarCorreo);
+        panel_enviarCorreo.setLayout(panel_enviarCorreoLayout);
+        panel_enviarCorreoLayout.setHorizontalGroup(
+            panel_enviarCorreoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(panel_enviarCorreoLayout.createSequentialGroup()
+                .addGroup(panel_enviarCorreoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jButton8)
+                    .addGroup(panel_enviarCorreoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(panel_enviarCorreoLayout.createSequentialGroup()
+                            .addGap(109, 109, 109)
+                            .addComponent(jLabel13))
+                        .addGroup(panel_enviarCorreoLayout.createSequentialGroup()
+                            .addContainerGap()
+                            .addComponent(jLabel24))
+                        .addGroup(panel_enviarCorreoLayout.createSequentialGroup()
+                            .addContainerGap()
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 365, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(panel_enviarCorreoLayout.createSequentialGroup()
+                            .addContainerGap()
+                            .addComponent(jLabel14)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(label_correoDestino))))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
-        panel_modifyContactLayout.setVerticalGroup(
-            panel_modifyContactLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 410, Short.MAX_VALUE)
+        panel_enviarCorreoLayout.setVerticalGroup(
+            panel_enviarCorreoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(panel_enviarCorreoLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel13)
+                .addGap(18, 18, 18)
+                .addGroup(panel_enviarCorreoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel14)
+                    .addComponent(label_correoDestino))
+                .addGap(35, 35, 35)
+                .addComponent(jLabel24)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 215, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton8)
+                .addContainerGap(27, Short.MAX_VALUE))
         );
 
-        getContentPane().add(panel_modifyContact, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 410, 410));
+        getContentPane().add(panel_enviarCorreo, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 410, 410));
 
         jLabel8.setText("LLamanda en progreso");
 
@@ -1353,10 +1465,13 @@ public class HomeView extends javax.swing.JFrame {
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton7;
+    private javax.swing.JButton jButton8;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
@@ -1366,6 +1481,7 @@ public class HomeView extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel24;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1387,11 +1503,13 @@ public class HomeView extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JToggleButton jToggleButton1;
     private javax.swing.JLabel label_contactImage;
     private javax.swing.JLabel label_contactList;
     private javax.swing.JLabel label_contactNumero;
+    private javax.swing.JLabel label_correoDestino;
     private javax.swing.JLabel label_nombreCompleto;
     private javax.swing.JLabel label_video;
     private javax.swing.JButton loginButton_login;
@@ -1400,13 +1518,14 @@ public class HomeView extends javax.swing.JFrame {
     private javax.swing.JPanel panel_comandos;
     private javax.swing.JPanel panel_contact;
     private javax.swing.JPanel panel_contacts;
+    private javax.swing.JPanel panel_enviarCorreo;
     private javax.swing.JPanel panel_login;
-    private javax.swing.JPanel panel_modifyContact;
     private javax.swing.JPanel panel_msg;
     private javax.swing.JPanel panel_numbers;
     private javax.swing.JPanel panel_sms;
     private javax.swing.JPanel panel_videoCall;
     private javax.swing.JTextArea textArea_listaMensajes;
+    private javax.swing.JTextArea text_bitacora;
     private javax.swing.JTextField text_contactApellido;
     private javax.swing.JTextField text_contactNombre;
     private javax.swing.JFormattedTextField text_contactNumero;
